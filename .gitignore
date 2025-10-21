@@ -1,0 +1,124 @@
+# ===================================
+# DONNÉES SENSIBLES - NE JAMAIS VERSIONNER
+# ===================================
+
+# Données utilisateurs
+data/feedback.csv
+data/admin_hash.txt
+data/sessions.json
+data/reset_date.txt
+
+# Fichiers de configuration sensibles
+config_local.php
+.env
+
+# Mots de passe et secrets
+*.key
+*.pem
+secrets.txt
+
+
+# ===================================
+# FICHIERS SYSTÈME
+# ===================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+
+# ===================================
+# LOGS ET TEMPORAIRES
+# ===================================
+
+# Logs
+*.log
+logs/
+*.sql
+*.sqlite
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*~
+
+
+# ===================================
+# IDE ET ÉDITEURS
+# ===================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PHPStorm / IntelliJ
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+
+# ===================================
+# DÉPENDANCES (si utilisé plus tard)
+# ===================================
+
+# Composer (PHP)
+vendor/
+composer.lock
+
+# NPM (Node.js)
+node_modules/
+package-lock.json
+
+
+# ===================================
+# FICHIERS UPLOAD / CACHE
+# ===================================
+
+# Fichiers uploadés (si différent de data/)
+uploads/
+cache/
+tmp/
+
+
+# ===================================
+# FICHIERS DE BACKUP
+# ===================================
+
+# Sauvegardes automatiques
+*.backup
+*.old
+backup/
+backups/
+
+
+# ===================================
+# GARDEZ STRUCTURE DOSSIERS VIDES
+# ===================================
+
+# On garde les dossiers mais pas leur contenu
+# Ajoutez un .gitkeep dans les dossiers à garder vides
+!data/.gitkeep
