@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Évaluation anonyme du cours">
+    <title>Évaluation du Cours</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <span class="settings-icon" onclick="openAdminModal()" title="Administration">⚙️</span>
+        
+        <h1>📚 Évaluation du Cours</h1>
+
+        <!-- Affichage simple de la session active -->
+        <div class="session-display" id="sessionDisplay">
+            <span class="session-label">Session :</span>
+            <span class="session-name" id="sessionName">Chargement...</span>
+        </div>
+
+        <div class="question-block">
+            <div class="question">J'ai aimé le cours aujourd'hui</div>
+            <div class="smiley-container">
+                <span class="smiley" onclick="sendFeedback('liked', 0)" title="J'ai détesté" data-value="0">😟</span>
+                <span class="smiley" onclick="sendFeedback('liked', 1)" title="Mouais bof" data-value="1">😐</span>
+                <span class="smiley" onclick="sendFeedback('liked', 2)" title="J'ai aimé" data-value="2">🙂</span>
+                <span class="smiley" onclick="sendFeedback('liked', 3)" title="J'ai adoré" data-value="3">😃</span>
+            </div>
+        </div>
+
+        <div class="question-block">
+            <div class="question">J'ai appris quelque chose aujourd'hui</div>
+            <div class="smiley-container">
+                <span class="smiley" onclick="sendFeedback('learned', 0)" title="Je n'ai rien appris" data-value="0">😟</span>
+                <span class="smiley" onclick="sendFeedback('learned', 1)" title="Mouais un peu" data-value="1">😐</span>
+                <span class="smiley" onclick="sendFeedback('learned', 2)" title="J'ai appris et compris quelque chose" data-value="2">🙂</span>
+                <span class="smiley" onclick="sendFeedback('learned', 3)" title="J'ai tout compris" data-value="3">😃</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            Vos réponses sont totalement anonymes 🔒
+        </div>
+    </div>
+
+    <div class="popup" id="popup">✓ Réponse enregistrée !</div>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="admin-modal" onclick="event.stopPropagation()">
+            <h2>🔐 Administration</h2>
+            <input type="password" id="adminCode" maxlength="4" placeholder="Code à 4 chiffres">
+            <div>
+                <button class="btn btn-primary" onclick="checkAdminCode()">Valider</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
