@@ -35,6 +35,7 @@ if (!$activeSession) {
 echo json_encode([
     'success' => true,
     'sessions' => $sessions,
-    'active_session' => $activeSession
+    'active_session' => $activeSession,
+    'csrf_token' => generateCSRFToken()
 ]);
 ?>
