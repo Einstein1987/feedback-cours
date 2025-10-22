@@ -1,0 +1,54 @@
+# Protection des fichiers sensibles
+<FilesMatch "^(config\.php|\.htaccess)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protéger le dossier data
+<Directory "data">
+    Order allow,deny
+    Deny from all
+</Directory>
+
+# Bloquer l'accès direct aux fichiers CSV et TXT
+<FilesMatch "\.(csv|txt|json)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Autoriser uniquement les scripts PHP à accéder aux données
+<Files ~ "\.php$">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# Désactiver l'affichage des répertoires
+Options -Indexes
+
+# Protection contre les injections
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Bloquer les requêtes suspectes
+    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
+    RewriteRule ^(.*)$ index.html [F,L]
+</IfModule>
+
+# Forcer HTTPS (si disponible)
+# Décommenter si vous avez un certificat SSL
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# Limiter la taille des uploads
+php_value upload_max_filesize 2M
+php_value post_max_size 2M
+
+# Désactiver l'exécution de PHP dans le dossier data
+<Directory "data">
+    php_flag engine off
+</Directory>
