@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Rate limiting pour éviter les attaques par force brute
 $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-if (!checkRateLimit('admin_' . $clientIP, 5, 300)) {
+if (!checkRateLimit('admin_' . $clientIP, MAX_ADMIN_ATTEMPTS, ADMIN_RATE_LIMIT_WINDOW)) {
     http_response_code(429);
     echo json_encode(['success' => false, 'message' => 'Trop de tentatives. Veuillez patienter 5 minutes.']);
     exit;
@@ -28,7 +28,7 @@ if (!isset($_POST['code'])) {
 $code = $_POST['code'];
 
 // Validation du format (4 chiffres)
-if (!preg_match('/^\d{4}$/', $code)) {
+if (!validateAdminCode($code)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Format de code invalide']);
     exit;
