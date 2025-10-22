@@ -163,11 +163,17 @@ function initIndexEventListeners() {
 let statsChart = null;
 let timeChart = null;
 let currentData = null;
+let csrfToken = null; // Token CSRF pour les requêtes admin
 
 function loadSessions() {
     fetch('get_sessions.php')
         .then(response => response.json())
         .then(data => {
+            // Stocker le token CSRF
+            if (data.csrf_token) {
+                csrfToken = data.csrf_token;
+            }
+            
             const select = document.getElementById('sessionSelect');
             const sessionList = document.getElementById('sessionList');
             
@@ -375,7 +381,7 @@ function confirmResetStats() {
     fetch('reset.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `session=${encodeURIComponent(session)}`
+        body: `session=${encodeURIComponent(session)}&csrf_token=${encodeURIComponent(csrfToken)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -393,7 +399,7 @@ function setActiveSession(sessionId) {
     fetch('set_active_session.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `session_id=${encodeURIComponent(sessionId)}`
+        body: `session_id=${encodeURIComponent(sessionId)}&csrf_token=${encodeURIComponent(csrfToken)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -437,7 +443,7 @@ function changeAdminCode() {
     fetch('change_code.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `code=${encodeURIComponent(newCode)}`
+        body: `code=${encodeURIComponent(newCode)}&csrf_token=${encodeURIComponent(csrfToken)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -463,7 +469,7 @@ function createSession() {
     fetch('create_session.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `name=${encodeURIComponent(name)}`
+        body: `name=${encodeURIComponent(name)}&csrf_token=${encodeURIComponent(csrfToken)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -486,7 +492,7 @@ function deleteSession(sessionId) {
     fetch('delete_session.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `session=${encodeURIComponent(sessionId)}`
+        body: `session=${encodeURIComponent(sessionId)}&csrf_token=${encodeURIComponent(csrfToken)}`
     })
     .then(response => response.json())
     .then(data => {
