@@ -17,6 +17,13 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     exit;
 }
 
+// Vérifier le token CSRF
+if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
+    exit;
+}
+
 // Récupérer le nom de la session
 if (!isset($_POST['name'])) {
     http_response_code(400);
@@ -27,9 +34,9 @@ if (!isset($_POST['name'])) {
 $name = sanitizeInput($_POST['name']);
 
 // Validation
-if (empty($name) || strlen($name) > 100) {
+if (!validateSessionName($name)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Nom de session invalide']);
+    echo json_encode(['success' => false, 'message' => 'Nom de session invalide (3-100 caractères requis)']);
     exit;
 }
 
