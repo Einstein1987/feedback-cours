@@ -17,6 +17,13 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     exit;
 }
 
+// Vérifier le token CSRF
+if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
+    exit;
+}
+
 // Récupérer l'ID de la session à activer
 if (!isset($_POST['session_id'])) {
     http_response_code(400);
@@ -25,6 +32,13 @@ if (!isset($_POST['session_id'])) {
 }
 
 $sessionId = sanitizeInput($_POST['session_id']);
+
+// Validation stricte
+if (!validateSessionId($sessionId)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Format de session invalide']);
+    exit;
+}
 
 // Charger les sessions existantes
 $sessions = json_decode(file_get_contents(SESSIONS_FILE), true);
