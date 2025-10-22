@@ -10,6 +10,12 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
 // Récupérer le filtre de session
 $sessionFilter = isset($_GET['session']) ? sanitizeInput($_GET['session']) : 'all';
 
+// Validation stricte si pas "all"
+if ($sessionFilter !== 'all' && !validateSessionId($sessionFilter)) {
+    http_response_code(400);
+    die('Format de session invalide');
+}
+
 // Charger les données
 $data = file_exists(FEEDBACK_FILE) ? file(FEEDBACK_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
 
