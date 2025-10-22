@@ -17,8 +17,15 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     exit;
 }
 
+// Vérifier le token CSRF
+if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
+    exit;
+}
+
 // Vérifier l'expiration de la session admin (30 minutes)
-if (isset($_SESSION['admin_time']) && (time() - $_SESSION['admin_time'] > 1800)) {
+if (isset($_SESSION['admin_time']) && (time() - $_SESSION['admin_time'] > ADMIN_SESSION_TIMEOUT)) {
     unset($_SESSION['is_admin']);
     unset($_SESSION['admin_time']);
     http_response_code(403);
@@ -28,6 +35,13 @@ if (isset($_SESSION['admin_time']) && (time() - $_SESSION['admin_time'] > 1800))
 
 // Récupérer le filtre de session
 $sessionFilter = isset($_POST['session']) ? sanitizeInput($_POST['session']) : 'all';
+
+// Validation stricte si pas "all"
+if ($sessionFilter !== 'all' && !validateSessionId($sessionFilter)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Format de session invalide']);
+    exit;
+}
 
 if ($sessionFilter === 'all') {
     // Réinitialiser toutes les statistiques
