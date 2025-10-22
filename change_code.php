@@ -17,6 +17,13 @@ if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
     exit;
 }
 
+// Vérifier le token CSRF
+if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
+    exit;
+}
+
 // Récupérer le nouveau code
 if (!isset($_POST['code'])) {
     http_response_code(400);
@@ -27,7 +34,7 @@ if (!isset($_POST['code'])) {
 $newCode = $_POST['code'];
 
 // Validation du format (4 chiffres)
-if (!preg_match('/^\d{4}$/', $newCode)) {
+if (!validateAdminCode($newCode)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Le code doit contenir exactement 4 chiffres']);
     exit;
