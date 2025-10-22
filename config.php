@@ -48,8 +48,8 @@ function hashAdminCode($code) {
 // Fonction pour vérifier le code admin
 function verifyAdminCode($code) {
     if (!file_exists(ADMIN_HASH_FILE)) {
-        // Créer un code par défaut si le fichier n'existe pas
-        $defaultHash = hashAdminCode('1945');
+        // Hash bcrypt du code par défaut
+        $defaultHash = '$2a$12$PDeBYhvpG1wbLn/BiBIkleAPsa2EqJza1Wa63ia1n0aArwqbkiKCG';
         file_put_contents(ADMIN_HASH_FILE, $defaultHash);
         return password_verify($code, $defaultHash);
     }
