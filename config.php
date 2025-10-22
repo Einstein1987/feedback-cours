@@ -11,6 +11,30 @@ define('ADMIN_HASH_FILE', 'data/admin_hash.txt');
 define('RESET_DATE_FILE', 'data/reset_date.txt');
 define('SESSIONS_FILE', 'data/sessions.json');
 
+// ===================================
+// CONSTANTES DE SÉCURITÉ
+// ===================================
+
+// Rate limiting
+define('MAX_VOTES_PER_MINUTE', 10);
+define('VOTE_RATE_LIMIT_WINDOW', 60); // secondes
+define('MAX_ADMIN_ATTEMPTS', 5);
+define('ADMIN_RATE_LIMIT_WINDOW', 300); // 5 minutes
+
+// Sessions
+define('ADMIN_SESSION_TIMEOUT', 1800); // 30 minutes
+define('VOTE_COOLDOWN', 20); // secondes
+
+// Fichiers
+define('MAX_CSV_SIZE', 10 * 1024 * 1024); // 10 MB
+define('MAX_SESSION_NAME_LENGTH', 100);
+define('MIN_SESSION_NAME_LENGTH', 3);
+
+// Patterns de validation
+define('SESSION_ID_PATTERN', '/^(default_|session_)[a-z0-9_]{1,50}$/i');
+define('ADMIN_CODE_PATTERN', '/^\d{4}$/');
+define('SESSION_NAME_PATTERN', '/^[a-zA-Z0-9\sÀ-ÿ\-_\/()]{3,100}$/');
+
 // Créer le dossier data s'il n'existe pas
 if (!file_exists('data')) {
     mkdir('data', 0750, true);
@@ -41,9 +65,52 @@ function generateCSRFToken() {
     return $_SESSION['csrf_token'];
 }
 
+// Générer automatiquement le token CSRF pour cette session
+$csrfToken = generateCSRFToken();
+
 // Fonction pour vérifier le token CSRF
 function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// ===================================
+// FONCTIONS DE VALIDATION
+// ===================================
+
+// Valider l'ID d'une session
+function validateSessionId($sessionId) {
+    if (empty($sessionId)) {
+        return false;
+    }
+    return preg_match(SESSION_ID_PATTERN, $sessionId) === 1;
+}
+
+// Valider le nom d'une session
+function validateSessionName($name) {
+    if (empty($name)) {
+        return false;
+    }
+    $length = strlen($name);
+    if ($length < MIN_SESSION_NAME_LENGTH || $length > MAX_SESSION_NAME_LENGTH) {
+        return false;
+    }
+    return preg_match(SESSION_NAME_PATTERN, $name) === 1;
+}
+
+// Valider le code admin
+function validateAdminCode($code) {
+    if (empty($code)) {
+        return false;
+    }
+    return preg_match(ADMIN_CODE_PATTERN, $code) === 1;
+}
+
+// Vérifier la taille du fichier CSV
+function checkCSVSize() {
+    if (!file_exists(FEEDBACK_FILE)) {
+        return true; // Fichier n'existe pas encore, OK
+    }
+    return filesize(FEEDBACK_FILE) < MAX_CSV_SIZE;
 }
 
 // Fonction pour nettoyer les entrées
@@ -52,7 +119,7 @@ function sanitizeInput($data) {
 }
 
 // Protection contre les attaques par force brute (rate limiting simple)
-function checkRateLimit($identifier, $maxAttempts = 5, $timeWindow = 300) {
+function checkRateLimit($identifier, $maxAttempts = MAX_VOTES_PER_MINUTE, $timeWindow = VOTE_RATE_LIMIT_WINDOW) {
     if (!isset($_SESSION['rate_limit'])) {
         $_SESSION['rate_limit'] = [];
     }
