@@ -12,9 +12,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Rate limiting - max 10 votes par minute par IP
 $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-if (!checkRateLimit('vote_' . $clientIP, 10, 60)) {
+if (!checkRateLimit('vote_' . $clientIP, MAX_VOTES_PER_MINUTE, VOTE_RATE_LIMIT_WINDOW)) {
     http_response_code(429);
     echo json_encode(['success' => false, 'message' => 'Trop de requêtes. Veuillez patienter.']);
+    exit;
+}
+
+// Vérifier la taille du fichier CSV AVANT d'ajouter
+if (!checkCSVSize()) {
+    http_response_code(507); // Insufficient Storage
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Stockage plein. Veuillez contacter l\'administrateur pour archiver les données.'
+    ]);
     exit;
 }
 
@@ -45,9 +55,9 @@ if ($value < 0 || $value > 3) {
 }
 
 // Validation de la session
-if (empty($session) || strlen($session) > 50) {
+if (!validateSessionId($session)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Session invalide']);
+    echo json_encode(['success' => false, 'message' => 'Format de session invalide']);
     exit;
 }
 
