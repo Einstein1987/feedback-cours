@@ -49,6 +49,7 @@ php_value upload_max_filesize 2M
 php_value post_max_size 2M
 
 # Désactiver l'exécution de PHP dans le dossier data
-<Directory "data">
-    php_flag engine off
-</Directory>
+<FilesMatch "data/.*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
