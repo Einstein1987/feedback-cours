@@ -36,6 +36,7 @@ if (!validateAdminCode($code)) {
 
 // Vérifier le code
 if (verifyAdminCode($code)) {
+    session_regenerate_id(true); // Protection session fixation
     // Créer une session admin
     $_SESSION['is_admin'] = true;
     $_SESSION['admin_time'] = time();
