@@ -415,6 +415,36 @@ h1 {
 }
 
 /* ===================================
+   FIX POUR APPAREILS TACTILES (iPad)
+   Désactive le "sticky hover" sur iPad
+   ================================== */
+@media (hover: none) and (pointer: coarse) {
+    /* Sur les appareils tactiles, désactiver les effets hover des smileys */
+    .smiley:hover {
+        transform: none !important;
+        filter: none !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Désactiver aussi le hover du conteneur de questions */
+    .question-block:hover {
+        transform: none !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* Garder seulement l'effet au moment du tap (active) */
+    .smiley:active {
+        transform: scale(1.1) rotate(-5deg);
+    }
+    
+    /* Animation selected uniquement */
+    .smiley.selected {
+        animation: bounce 0.5s;
+        box-shadow: 0 0 20px var(--primary-color);
+    }
+}
+
+/* ===================================
    STYLES SPÉCIFIQUES - Page Stats
    ================================== */
 

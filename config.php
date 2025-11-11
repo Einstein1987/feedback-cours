@@ -23,7 +23,7 @@ define('ADMIN_RATE_LIMIT_WINDOW', 300); // 5 minutes
 
 // Sessions
 define('ADMIN_SESSION_TIMEOUT', 1800); // 30 minutes
-define('VOTE_COOLDOWN', 20); // secondes
+define('VOTE_COOLDOWN', 8); // secondes
 
 // Fichiers
 define('MAX_CSV_SIZE', 10 * 1024 * 1024); // 10 MB

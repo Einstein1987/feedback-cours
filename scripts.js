@@ -7,23 +7,45 @@
    ================================== */
 
 let activeSession = null;
+let sessionLoaded = false; // Flag pour éviter de recharger plusieurs fois
 
 // Charger la session active
 function loadActiveSession() {
+    // Éviter de charger plusieurs fois si déjà chargé
+    if (sessionLoaded && activeSession) {
+        return;
+    }
+    
     fetch('get_sessions.php')
         .then(response => response.json())
         .then(data => {
             if (data.success && data.active_session) {
                 activeSession = data.active_session;
-                document.getElementById('sessionName').textContent = activeSession.name;
+                const sessionNameElement = document.getElementById('sessionName');
+                if (sessionNameElement) {
+                    sessionNameElement.textContent = activeSession.name;
+                    sessionLoaded = true;
+                }
             } else {
-                document.getElementById('sessionName').textContent = 'Aucune session';
-                activeSession = null;
+                // Ne pas effacer si déjà chargé et erreur temporaire
+                if (!sessionLoaded) {
+                    const sessionNameElement = document.getElementById('sessionName');
+                    if (sessionNameElement) {
+                        sessionNameElement.textContent = 'Aucune session';
+                    }
+                    activeSession = null;
+                }
             }
         })
         .catch(error => {
-            console.error('Erreur:', error);
-            document.getElementById('sessionName').textContent = 'Erreur de chargement';
+            console.error('Erreur lors du chargement de la session:', error);
+            // Ne pas effacer si déjà chargé et erreur temporaire
+            if (!sessionLoaded) {
+                const sessionNameElement = document.getElementById('sessionName');
+                if (sessionNameElement) {
+                    sessionNameElement.textContent = 'Erreur de chargement';
+                }
+            }
         });
 }
 
@@ -55,8 +77,33 @@ function sendFeedback(type, value) {
     }
 
     // Animation sur le smiley sélectionné
-    event.target.classList.add('selected');
-    setTimeout(() => event.target.classList.remove('selected'), 500);
+    const clickedSmiley = event.target;
+    
+    // Solution pour le "sticky hover" sur iPad/iOS :
+    // 1. Forcer la suppression de tous les états hover en désactivant les interactions
+    clickedSmiley.style.pointerEvents = 'none';
+    
+    // 2. Forcer un "blur" pour retirer le focus tactile (spécifique iOS)
+    if (clickedSmiley.blur) {
+        clickedSmiley.blur();
+    }
+    
+    // 3. Ajouter la classe selected pour l'animation
+    clickedSmiley.classList.add('selected');
+    
+    // 4. Après l'animation, tout nettoyer et forcer un reset CSS
+    setTimeout(() => {
+        clickedSmiley.classList.remove('selected');
+        
+        // Forcer la réinitialisation du transform pour contrer le hover sticky
+        clickedSmiley.style.transform = 'scale(1) rotate(0deg)';
+        
+        // Attendre un frame avant de restaurer les interactions
+        requestAnimationFrame(() => {
+            clickedSmiley.style.transform = '';
+            clickedSmiley.style.pointerEvents = '';
+        });
+    }, 600);
 
     fetch('save.php', {
         method: 'POST',
@@ -66,7 +113,7 @@ function sendFeedback(type, value) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            setCookie('lastVote', '1', 20);
+            setCookie('lastVote', '1', 8);
             showPopup();
         } else {
             alert('❌ ' + (data.message || 'Erreur lors de l\'enregistrement'));
@@ -516,6 +563,13 @@ window.addEventListener('load', function() {
         // Page index.html
         initIndexEventListeners();
         loadActiveSession();
+        
+        // Recharger la session toutes les 5 minutes pour garder à jour (au cas où l'admin change la session active)
+        setInterval(() => {
+            if (!sessionLoaded || !activeSession) {
+                loadActiveSession();
+            }
+        }, 300000); // 5 minutes
     }
     
     // Vérifier si on est sur la page stats.html
