@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistiques - Administration</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260818-footer">
 </head>
 <body class="stats-page">
     <div class="container">
@@ -64,6 +64,17 @@
             <div id="sessionList" class="session-list"></div>
         </div>
     </div>
+
+    <footer class="app-footer" aria-label="Informations sur l'application">
+        <img class="app-footer__avatar" src="IMG/logo_dev.png" alt="" width="65" height="65">
+        <p>
+            Développé par <strong>Jérémy VIOLETTE</strong>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licence MIT</a>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours" target="_blank" rel="noopener noreferrer">Code source</a>
+        </p>
+    </footer>
 
     <!-- Modal Paramètres -->
     <div class="modal-overlay" id="settingsModal" onclick="closeModalById('settingsModal', event)">
