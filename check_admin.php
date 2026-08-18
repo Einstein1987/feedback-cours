@@ -1,57 +1,35 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
-header('Content-Type: application/json');
+requirePostRequest();
 
-// Vérifier que c'est une requête POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);
-    exit;
+$identifier = clientIdentifier('admin');
+if (!checkRateLimit($identifier, MAX_ADMIN_ATTEMPTS, ADMIN_RATE_LIMIT_WINDOW)) {
+    jsonResponse(['success' => false, 'message' => 'Trop de tentatives. Réessayez dans quelques minutes.'], 429);
 }
 
-// Rate limiting pour éviter les attaques par force brute
-$clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-if (!checkRateLimit('admin_' . $clientIP, MAX_ADMIN_ATTEMPTS, ADMIN_RATE_LIMIT_WINDOW)) {
-    http_response_code(429);
-    echo json_encode(['success' => false, 'message' => 'Trop de tentatives. Veuillez patienter 5 minutes.']);
-    exit;
-}
-
-// Récupérer et valider le code
-if (!isset($_POST['code'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Code manquant']);
-    exit;
-}
-
-$code = $_POST['code'];
-
-// Validation du format (4 chiffres)
+$code = $_POST['code'] ?? '';
 if (!validateAdminCode($code)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Format de code invalide']);
-    exit;
+    jsonResponse(['success' => false, 'message' => 'Le code doit contenir entre 4 et 12 chiffres.'], 400);
 }
 
-// Vérifier le code
-if (verifyAdminCode($code)) {
-    session_regenerate_id(true); // Protection session fixation
-    // Créer une session admin
-    $_SESSION['is_admin'] = true;
-    $_SESSION['admin_time'] = time();
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Authentification réussie'
-    ]);
-} else {
-    // Délai supplémentaire en cas d'échec (protection contre brute force)
-    usleep(500000); // 0.5 seconde
-    
-    echo json_encode([
-        'success' => false,
-        'message' => 'Code incorrect'
-    ]);
+if (!file_exists(ADMIN_HASH_FILE)) {
+    jsonResponse(['success' => false, 'message' => 'Le code administrateur doit être initialisé. Consultez le README.'], 503);
 }
-?>
+
+if (!verifyAdminCode($code)) {
+    usleep(random_int(300000, 600000));
+    jsonResponse(['success' => false, 'message' => 'Code incorrect'], 401);
+}
+
+clearRateLimit($identifier);
+session_regenerate_id(true);
+$_SESSION['is_admin'] = true;
+$_SESSION['admin_time'] = time();
+unset($_SESSION['csrf_token']);
+
+jsonResponse([
+    'success' => true,
+    'message' => 'Authentification réussie',
+    'csrf_token' => generateCSRFToken(),
+]);
