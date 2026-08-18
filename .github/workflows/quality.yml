@@ -1,0 +1,31 @@
+name: Qualité
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Vérifier la syntaxe PHP
+        run: find . -maxdepth 1 -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Exécuter les contrôles PHP
+        run: php tests/security_checks.php
+
+      - name: Vérifier la syntaxe JavaScript
+        run: node --check scripts.js
+
+      - name: Vérifier la structure HTML
+        run: python3 tests/check_html.py
