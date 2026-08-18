@@ -57,12 +57,17 @@ if (!is_dir(DATA_DIR) && !mkdir(DATA_DIR, 0750, true) && !is_dir(DATA_DIR)) {
 
 function initializeDataFile($path, $content)
 {
-    if (!file_exists($path)) {
-        if (file_put_contents($path, $content, LOCK_EX) === false) {
-            throw new RuntimeException('Impossible d’initialiser un fichier de données.');
-        }
-        @chmod($path, 0640);
+    if (file_exists($path)) {
+        return true;
     }
+
+    if (@file_put_contents($path, $content, LOCK_EX) === false) {
+        error_log('Feedback cours : impossible de créer ' . basename($path));
+        return false;
+    }
+
+    @chmod($path, 0640);
+    return true;
 }
 
 initializeDataFile(FEEDBACK_FILE, '');
@@ -182,12 +187,19 @@ function validateNewAdminCode($code)
 
 function withDataLock($path, $exclusive, callable $callback)
 {
-    $lockPath = $path . '.lock';
-    $lock = fopen($lockPath, 'c+');
-    if ($lock === false) {
-        throw new RuntimeException('Impossible d’ouvrir le verrou de données.');
+    // Certains hébergeurs autorisent la modification des fichiers existants,
+    // mais interdisent la création de fichiers .lock. Dans ce cas, le fichier
+    // de données lui-même sert de verrou.
+    $lock = @fopen($path . '.lock', 'c+');
+    if ($lock !== false) {
+        @chmod($path . '.lock', 0640);
+    } else {
+        $lock = @fopen($path, 'c+');
     }
-    @chmod($lockPath, 0640);
+
+    if ($lock === false) {
+        throw new RuntimeException('Impossible d’ouvrir le fichier de données.');
+    }
 
     try {
         if (!flock($lock, $exclusive ? LOCK_EX : LOCK_SH)) {
@@ -202,23 +214,26 @@ function withDataLock($path, $exclusive, callable $callback)
 
 function atomicWriteFile($path, $content)
 {
-    $temporary = tempnam(DATA_DIR, '.tmp_');
-    if ($temporary === false) {
-        throw new RuntimeException('Impossible de créer le fichier temporaire.');
+    $temporary = @tempnam(DATA_DIR, '.tmp_');
+
+    if ($temporary !== false) {
+        try {
+            if (@file_put_contents($temporary, $content, LOCK_EX) !== false) {
+                @chmod($temporary, 0640);
+                if (@rename($temporary, $path)) {
+                    return;
+                }
+            }
+        } finally {
+            if (file_exists($temporary)) {
+                @unlink($temporary);
+            }
+        }
     }
 
-    try {
-        if (file_put_contents($temporary, $content, LOCK_EX) === false) {
-            throw new RuntimeException('Impossible d’écrire les données.');
-        }
-        @chmod($temporary, 0640);
-        if (!rename($temporary, $path)) {
-            throw new RuntimeException('Impossible de remplacer le fichier de données.');
-        }
-    } finally {
-        if (file_exists($temporary)) {
-            @unlink($temporary);
-        }
+    // Repli compatible avec les hébergements qui refusent tempnam/rename.
+    if (@file_put_contents($path, $content, LOCK_EX) === false) {
+        throw new RuntimeException('Impossible d’écrire les données.');
     }
 }
 
@@ -300,8 +315,37 @@ function filterFeedbackRows(callable $keepRow)
 
 function rateLimitKey($identifier)
 {
-    $secret = trim((string) file_get_contents(RATE_LIMIT_SECRET_FILE));
-    return hash_hmac('sha256', $identifier, $secret);
+    $secret = @file_get_contents(RATE_LIMIT_SECRET_FILE);
+    if ($secret === false || trim($secret) === '') {
+        // Secret de repli : aucune adresse n’est enregistrée en clair.
+        $secret = hash('sha256', __FILE__ . PHP_VERSION);
+    }
+    return hash_hmac('sha256', $identifier, trim($secret));
+}
+
+function checkSessionRateLimit($identifier, $maxAttempts, $timeWindow)
+{
+    if (!isset($_SESSION['rate_limit_fallback'])) {
+        $_SESSION['rate_limit_fallback'] = [];
+    }
+
+    $key = rateLimitKey($identifier);
+    $now = time();
+    $attempts = array_values(array_filter(
+        $_SESSION['rate_limit_fallback'][$key] ?? [],
+        function ($timestamp) use ($now, $timeWindow) {
+            return ($now - (int) $timestamp) < $timeWindow;
+        }
+    ));
+
+    if (count($attempts) >= $maxAttempts) {
+        $_SESSION['rate_limit_fallback'][$key] = $attempts;
+        return false;
+    }
+
+    $attempts[] = $now;
+    $_SESSION['rate_limit_fallback'][$key] = $attempts;
+    return true;
 }
 
 function checkRateLimit($identifier, $maxAttempts, $timeWindow)
@@ -309,36 +353,47 @@ function checkRateLimit($identifier, $maxAttempts, $timeWindow)
     $key = rateLimitKey($identifier);
     $now = time();
 
-    return mutateJsonData(RATE_LIMIT_FILE, function (&$limits) use ($key, $now, $maxAttempts, $timeWindow) {
-        foreach ($limits as $storedKey => $timestamps) {
-            $recent = array_values(array_filter((array) $timestamps, function ($timestamp) use ($now, $timeWindow) {
-                return ($now - (int) $timestamp) < $timeWindow;
-            }));
-            if ($recent) {
-                $limits[$storedKey] = $recent;
-            } else {
-                unset($limits[$storedKey]);
+    try {
+        return mutateJsonData(RATE_LIMIT_FILE, function (&$limits) use ($key, $now, $maxAttempts, $timeWindow) {
+            foreach ($limits as $storedKey => $timestamps) {
+                $recent = array_values(array_filter((array) $timestamps, function ($timestamp) use ($now, $timeWindow) {
+                    return ($now - (int) $timestamp) < $timeWindow;
+                }));
+                if ($recent) {
+                    $limits[$storedKey] = $recent;
+                } else {
+                    unset($limits[$storedKey]);
+                }
             }
-        }
 
-        $attempts = $limits[$key] ?? [];
-        if (count($attempts) >= $maxAttempts) {
-            return false;
-        }
+            $attempts = $limits[$key] ?? [];
+            if (count($attempts) >= $maxAttempts) {
+                return false;
+            }
 
-        $attempts[] = $now;
-        $limits[$key] = $attempts;
-        return true;
-    }, []);
+            $attempts[] = $now;
+            $limits[$key] = $attempts;
+            return true;
+        }, []);
+    } catch (RuntimeException $exception) {
+        error_log('Feedback cours : rate limiting en mode session.');
+        return checkSessionRateLimit($identifier, $maxAttempts, $timeWindow);
+    }
 }
 
 function clearRateLimit($identifier)
 {
     $key = rateLimitKey($identifier);
-    mutateJsonData(RATE_LIMIT_FILE, function (&$limits) use ($key) {
-        unset($limits[$key]);
-        return true;
-    }, []);
+    unset($_SESSION['rate_limit_fallback'][$key]);
+
+    try {
+        mutateJsonData(RATE_LIMIT_FILE, function (&$limits) use ($key) {
+            unset($limits[$key]);
+            return true;
+        }, []);
+    } catch (RuntimeException $exception) {
+        // Le mode de secours en session est déjà nettoyé.
+    }
 }
 
 function clientIdentifier($prefix)
