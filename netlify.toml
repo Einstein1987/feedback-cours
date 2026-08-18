@@ -1,0 +1,82 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/get_sessions.php"
+  to = "/.netlify/functions/api?action=get_sessions"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/save.php"
+  to = "/.netlify/functions/api?action=save"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/check_admin.php"
+  to = "/.netlify/functions/api?action=check_admin"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/change_code.php"
+  to = "/.netlify/functions/api?action=change_code"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/create_session.php"
+  to = "/.netlify/functions/api?action=create_session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/set_active_session.php"
+  to = "/.netlify/functions/api?action=set_active_session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/delete_session.php"
+  to = "/.netlify/functions/api?action=delete_session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reset.php"
+  to = "/.netlify/functions/api?action=reset"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stats.php"
+  to = "/.netlify/functions/api?action=stats"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/export.php"
+  to = "/.netlify/functions/api?action=export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/logout.php"
+  to = "/.netlify/functions/api?action=logout"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), geolocation=(), microphone=()"
+    X-Robots-Tag = "noindex, nofollow"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
