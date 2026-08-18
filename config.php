@@ -174,6 +174,11 @@ function validateAdminCode($code)
     return is_string($code) && preg_match(ADMIN_CODE_PATTERN, $code) === 1;
 }
 
+function validateNewAdminCode($code)
+{
+    return is_string($code) && preg_match(NEW_ADMIN_CODE_PATTERN, $code) === 1;
+}
+
 function withDataLock($path, $exclusive, callable $callback)
 {
     $lockPath = $path . '.lock';
