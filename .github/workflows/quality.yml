@@ -13,10 +13,20 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.3']
 
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
+
+      - name: Installer PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
 
       - name: Vérifier la syntaxe PHP
         run: find . -maxdepth 1 -name '*.php' -print0 | xargs -0 -n1 php -l
