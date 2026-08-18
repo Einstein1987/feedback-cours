@@ -722,3 +722,24 @@ body.stats-page h1 {
         width: 100%;
     }
 }
+
+/* Ajustements du pied de page sur les petits écrans */
+@media (max-width: 768px) and (orientation: portrait) {
+    body.home-page {
+        padding: 0.75rem;
+    }
+
+    body.home-page .container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100dvh - 7.5rem);
+        max-height: calc(100dvh - 7.5rem);
+    }
+}
+
+@media (max-width: 40rem) {
+    body.home-page .container {
+        height: calc(100dvh - 10.5rem);
+        max-height: calc(100dvh - 10.5rem);
+    }
+}
