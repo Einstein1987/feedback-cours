@@ -1,110 +1,52 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
-header('Content-Type: application/json');
+requirePostRequest();
 
-// Vérifier que c'est une requête POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);
-    exit;
+if (!checkRateLimit(clientIdentifier('vote'), MAX_VOTES_PER_MINUTE, VOTE_RATE_LIMIT_WINDOW)) {
+    jsonResponse(['success' => false, 'message' => 'Trop de votes rapprochés. Patientez quelques secondes.'], 429);
 }
 
-// Rate limiting - max 10 votes par minute par IP
-$clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-if (!checkRateLimit('vote_' . $clientIP, MAX_VOTES_PER_MINUTE, VOTE_RATE_LIMIT_WINDOW)) {
-    http_response_code(429);
-    echo json_encode(['success' => false, 'message' => 'Trop de requêtes. Veuillez patienter.']);
-    exit;
+$type = $_POST['type'] ?? '';
+$valueRaw = $_POST['value'] ?? null;
+$sessionId = $_POST['session'] ?? '';
+
+if (!in_array($type, ['liked', 'learned'], true)) {
+    jsonResponse(['success' => false, 'message' => 'Type de feedback invalide'], 400);
+}
+if (filter_var($valueRaw, FILTER_VALIDATE_INT) === false || (int) $valueRaw < 0 || (int) $valueRaw > 3) {
+    jsonResponse(['success' => false, 'message' => 'Valeur invalide'], 400);
+}
+if (!validateSessionId($sessionId)) {
+    jsonResponse(['success' => false, 'message' => 'Format de session invalide'], 400);
 }
 
-// Vérifier la taille du fichier CSV AVANT d'ajouter
-if (!checkCSVSize()) {
-    http_response_code(507); // Insufficient Storage
-    echo json_encode([
-        'success' => false, 
-        'message' => 'Stockage plein. Veuillez contacter l\'administrateur pour archiver les données.'
-    ]);
-    exit;
-}
-
-// Valider et nettoyer les entrées
-if (!isset($_POST['type']) || !isset($_POST['value']) || !isset($_POST['session'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Données manquantes']);
-    exit;
-}
-
-$type = sanitizeInput($_POST['type']);
-$value = intval($_POST['value']);
-$session = sanitizeInput($_POST['session']);
-
-// Validation stricte du type
-$validTypes = ['liked', 'learned'];
-if (!in_array($type, $validTypes)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Type de feedback invalide']);
-    exit;
-}
-
-// Validation stricte de la valeur (0-3)
-if ($value < 0 || $value > 3) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Valeur invalide']);
-    exit;
-}
-
-// Validation de la session
-if (!validateSessionId($session)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Format de session invalide']);
-    exit;
-}
-
-// Vérifier que la session existe
-$sessions = json_decode(file_get_contents(SESSIONS_FILE), true);
+$sessions = readJsonData(SESSIONS_FILE, []);
 $sessionExists = false;
-foreach ($sessions as $s) {
-    if ($s['id'] === $session) {
+foreach ($sessions as $session) {
+    if (($session['id'] ?? '') === $sessionId) {
         $sessionExists = true;
         break;
     }
 }
-
 if (!$sessionExists) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Session inexistante']);
-    exit;
+    jsonResponse(['success' => false, 'message' => 'Session inexistante'], 400);
 }
 
-// Préparer l'entrée CSV (échapper les données)
-$timestamp = date('Y-m-d H:i:s');
-$entry = sprintf(
-    '"%s","%s","%d","%s"' . PHP_EOL,
-    $timestamp,
-    $type,
-    $value,
-    $session
-);
-
-// Écrire dans le fichier avec verrouillage
-$fp = fopen(FEEDBACK_FILE, 'a');
-if ($fp) {
-    if (flock($fp, LOCK_EX)) {
-        fwrite($fp, $entry);
-        flock($fp, LOCK_UN);
-    }
-    fclose($fp);
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Feedback enregistré avec succès'
+try {
+    $stored = appendFeedbackRow([
+        date('Y-m-d H:i:s'),
+        $type,
+        (int) $valueRaw,
+        $sessionId,
     ]);
-} else {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Erreur lors de l\'enregistrement'
-    ]);
+} catch (RuntimeException $exception) {
+    error_log($exception->getMessage());
+    jsonResponse(['success' => false, 'message' => 'Erreur lors de l’enregistrement'], 500);
 }
-?>
+
+if (!$stored) {
+    jsonResponse(['success' => false, 'message' => 'Stockage plein. Une archive est nécessaire.'], 507);
+}
+
+jsonResponse(['success' => true, 'message' => 'Feedback enregistré avec succès'], 201);
