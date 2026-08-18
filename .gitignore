@@ -2,11 +2,9 @@
 # DONNÉES SENSIBLES - NE JAMAIS VERSIONNER
 # ===================================
 
-# Données utilisateurs
-data/feedback.csv
-data/admin_hash.txt
-data/sessions.json
-data/reset_date.txt
+# Données, secrets et verrous générés à l’exécution
+data/*
+!data/.gitkeep
 
 # Fichiers de configuration sensibles
 config_local.php
@@ -87,11 +85,9 @@ logs/
 
 # Composer (PHP)
 vendor/
-composer.lock
 
 # NPM (Node.js)
 node_modules/
-package-lock.json
 
 
 # ===================================
