@@ -1,55 +1,36 @@
-# Protection des fichiers sensibles
-<FilesMatch "^(config\.php|\.htaccess)$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-# Protéger le dossier data
-<Directory "data">
-    Order allow,deny
-    Deny from all
-</Directory>
-
-# Bloquer l'accès direct aux fichiers CSV et TXT
-<FilesMatch "\.(csv|txt|json)$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-# Autoriser uniquement les scripts PHP à accéder aux données
-<Files ~ "\.php$">
-    Order allow,deny
-    Allow from all
-</Files>
-
-# Désactiver l'affichage des répertoires
 Options -Indexes
 
-# Protection contre les injections
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    
-    # Bloquer les requêtes suspectes
-    RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
-    RewriteCond %{QUERY_STRING} GLOBALS(=|[|%[0-9A-Z]{0,2}) [OR]
-    RewriteCond %{QUERY_STRING} _REQUEST(=|[|%[0-9A-Z]{0,2})
-    RewriteRule ^(.*)$ index.html [F,L]
+# Les fichiers de configuration et de données ne doivent jamais être servis.
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(config\.php|\.htaccess)$">
+        Require all denied
+    </FilesMatch>
+    <FilesMatch "\.(csv|txt|json|lock)$">
+        Require all denied
+    </FilesMatch>
 </IfModule>
 
-# Forcer HTTPS (si disponible)
-# Décommenter si vous avez un certificat SSL
-# <IfModule mod_rewrite.c>
-#     RewriteEngine On
-#     RewriteCond %{HTTPS} off
-#     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-# </IfModule>
+# Compatibilité Apache 2.2 lorsque mod_authz_core n'est pas disponible.
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(config\.php|\.htaccess)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    <FilesMatch "\.(csv|txt|json|lock)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
 
-# Limiter la taille des uploads
-php_value upload_max_filesize 2M
-php_value post_max_size 2M
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set Permissions-Policy "camera=(), geolocation=(), microphone=()"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Header always set X-Robots-Tag "noindex, nofollow" "expr=%{REQUEST_URI} =~ m#(?:stats\.html|stats\.php|export\.php)$#"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+</IfModule>
 
-# Désactiver l'exécution de PHP dans le dossier data
-<FilesMatch "data/.*\.php$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
+# La redirection HTTPS dépend du domaine et du certificat de l'hébergeur.
+# L'activer dans le panneau d'hébergement plutôt que dupliquer une règle ici.
