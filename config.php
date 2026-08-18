@@ -47,7 +47,8 @@ define('MAX_CSV_SIZE', 10 * 1024 * 1024);
 define('MAX_SESSION_NAME_LENGTH', 100);
 define('MIN_SESSION_NAME_LENGTH', 3);
 define('SESSION_ID_PATTERN', '/^(default_|session_)[a-z0-9_]{1,50}$/i');
-define('ADMIN_CODE_PATTERN', '/^\d{6,12}$/');
+define('ADMIN_CODE_PATTERN', '/^\d{4,12}$/');
+define('NEW_ADMIN_CODE_PATTERN', '/^\d{6,12}$/');
 define('SESSION_NAME_PATTERN', '/^[\p{L}\p{N}\s\-_\/()’\'.,:]{3,100}$/u');
 
 if (!is_dir(DATA_DIR) && !mkdir(DATA_DIR, 0750, true) && !is_dir(DATA_DIR)) {
