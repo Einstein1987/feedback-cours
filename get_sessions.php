@@ -1,41 +1,43 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
-header('Content-Type: application/json');
+$sessions = readJsonData(SESSIONS_FILE, []);
 
-// Charger les sessions
-$sessions = json_decode(file_get_contents(SESSIONS_FILE), true);
-
-// Si aucune session n'existe, créer une session par défaut
-if (empty($sessions)) {
-    $defaultSession = [
-        'id' => 'default_' . date('Y'),
-        'name' => 'Cours ' . date('Y') . '/' . (date('Y') + 1), // Format 2025/2026
-        'created_at' => date('Y-m-d H:i:s'),
-        'is_active' => true
-    ];
-    $sessions = [$defaultSession];
-    file_put_contents(SESSIONS_FILE, json_encode($sessions, JSON_PRETTY_PRINT));
+if (!$sessions) {
+    mutateJsonData(SESSIONS_FILE, function (&$storedSessions) {
+        if (!$storedSessions) {
+            $storedSessions[] = [
+                'id' => 'default_' . date('Y'),
+                'name' => 'Cours ' . date('Y') . '/' . ((int) date('Y') + 1),
+                'created_at' => date('Y-m-d H:i:s'),
+                'is_active' => true,
+            ];
+        }
+    });
+    $sessions = readJsonData(SESSIONS_FILE, []);
 }
 
-// Déterminer la session active (marquée is_active = true)
 $activeSession = null;
 foreach ($sessions as $session) {
-    if (isset($session['is_active']) && $session['is_active'] === true) {
+    if (!empty($session['is_active'])) {
         $activeSession = $session;
         break;
     }
 }
-
-// Si aucune session active, prendre la plus récente
-if (!$activeSession) {
+if ($activeSession === null && $sessions) {
     $activeSession = end($sessions);
 }
 
-echo json_encode([
+$isAdmin = isAdminSession(false);
+$response = [
     'success' => true,
-    'sessions' => $sessions,
+    'is_admin' => $isAdmin,
     'active_session' => $activeSession,
-    'csrf_token' => generateCSRFToken()
-]);
-?>
+];
+
+if ($isAdmin) {
+    $response['sessions'] = $sessions;
+    $response['csrf_token'] = generateCSRFToken();
+}
+
+jsonResponse($response);

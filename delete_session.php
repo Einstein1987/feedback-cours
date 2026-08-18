@@ -1,93 +1,61 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
-header('Content-Type: application/json');
+requirePostRequest();
+requireAdmin();
+requireCSRFToken();
 
-// Vérifier que c'est une requête POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);
-    exit;
-}
-
-// Vérifier l'authentification admin
-if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Non autorisé']);
-    exit;
-}
-
-// Vérifier le token CSRF
-if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Token CSRF invalide']);
-    exit;
-}
-
-// Récupérer l'ID de la session
-if (!isset($_POST['session'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'ID de session manquant']);
-    exit;
-}
-
-$sessionId = sanitizeInput($_POST['session']);
-
-// Validation stricte
+$sessionId = $_POST['session'] ?? '';
 if (!validateSessionId($sessionId)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Format de session invalide']);
-    exit;
+    jsonResponse(['success' => false, 'message' => 'Format de session invalide'], 400);
 }
 
-// Charger les sessions existantes
-$sessions = json_decode(file_get_contents(SESSIONS_FILE), true);
+$result = mutateJsonData(SESSIONS_FILE, function (&$sessions) use ($sessionId) {
+    $found = false;
+    $deletedWasActive = false;
+    $remaining = [];
 
-// Trouver et supprimer la session
-$found = false;
-$newSessions = [];
-foreach ($sessions as $session) {
-    if ($session['id'] === $sessionId) {
-        $found = true;
-        continue; // Ne pas ajouter cette session
-    }
-    $newSessions[] = $session;
-}
-
-if (!$found) {
-    http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'Session non trouvée']);
-    exit;
-}
-
-// Ne pas permettre de supprimer si c'est la dernière session
-if (count($newSessions) === 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Impossible de supprimer la dernière session']);
-    exit;
-}
-
-// Supprimer également les données associées à cette session
-$data = file_exists(FEEDBACK_FILE) ? file(FEEDBACK_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
-$newData = [];
-
-foreach ($data as $line) {
-    $parts = str_getcsv($line);
-    if (count($parts) >= 4) {
-        $session = trim($parts[3], '"');
-        // Garder les lignes des autres sessions
-        if ($session !== $sessionId) {
-            $newData[] = $line;
+    foreach ($sessions as $session) {
+        if (($session['id'] ?? '') === $sessionId) {
+            $found = true;
+            $deletedWasActive = !empty($session['is_active']);
+            continue;
         }
+        $remaining[] = $session;
     }
+
+    if (!$found) {
+        return ['status' => 'missing'];
+    }
+    if (!$remaining) {
+        return ['status' => 'last'];
+    }
+
+    if ($deletedWasActive) {
+        foreach ($remaining as &$session) {
+            $session['is_active'] = false;
+        }
+        unset($session);
+        $remaining[count($remaining) - 1]['is_active'] = true;
+    }
+
+    $sessions = $remaining;
+    return ['status' => 'deleted'];
+}, []);
+
+if ($result['status'] === 'missing') {
+    jsonResponse(['success' => false, 'message' => 'Session non trouvée'], 404);
+}
+if ($result['status'] === 'last') {
+    jsonResponse(['success' => false, 'message' => 'Impossible de supprimer la dernière session'], 400);
 }
 
-// Sauvegarder
-file_put_contents(FEEDBACK_FILE, implode(PHP_EOL, $newData) . (count($newData) > 0 ? PHP_EOL : ''));
-file_put_contents(SESSIONS_FILE, json_encode($newSessions, JSON_PRETTY_PRINT));
+filterFeedbackRows(function ($row) use ($sessionId) {
+    return ($row[3] ?? '') !== $sessionId;
+});
 
-echo json_encode([
-    'success' => true,
-    'message' => 'Session supprimée avec succès'
-]);
-?>
+mutateJsonData(RESET_DATES_FILE, function (&$dates) use ($sessionId) {
+    unset($dates[$sessionId]);
+});
+
+jsonResponse(['success' => true, 'message' => 'Session supprimée avec succès']);

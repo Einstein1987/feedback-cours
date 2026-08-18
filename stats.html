@@ -3,105 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistiques - Administration</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Statistiques — Administration</title>
+    <link rel="stylesheet" href="styles.css?v=20260818-audit">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="scripts.js?v=20260818-audit" defer></script>
 </head>
 <body class="stats-page">
-    <div class="container">
-        <div class="header">
-            <span class="close-button" onclick="window.location.href='index.html'" title="Retour">✖</span>
-            <h1>📊 Statistiques des Réponses</h1>
-            <span class="settings-icon" onclick="openSettingsModal()" title="Paramètres">⚙️</span>
-        </div>
+    <main class="container">
+        <header class="header">
+            <button class="close-button icon-button" id="backButton" type="button" aria-label="Revenir au vote" title="Retour">✖</button>
+            <h1>📊 Statistiques des réponses</h1>
+            <div class="header-actions">
+                <button class="icon-button" id="openSettingsButton" type="button" aria-label="Modifier le code administrateur" title="Paramètres">⚙️</button>
+                <button class="btn btn-secondary btn-compact" id="logoutButton" type="button">Déconnexion</button>
+            </div>
+        </header>
 
         <div class="session-selector">
-            <select id="sessionSelect" onchange="loadStats()">
+            <label for="sessionSelect">Session affichée</label>
+            <select id="sessionSelect">
                 <option value="all">Toutes les sessions</option>
             </select>
         </div>
 
-        <div class="info-box">
-            <p id="resetDate">Chargement...</p>
-            <p id="totalResponses" style="margin-top: 10px; font-size: 1.2rem;"></p>
+        <div class="info-box" role="status" aria-live="polite">
+            <p id="resetDate">Chargement…</p>
+            <p id="totalResponses" class="total-responses"></p>
         </div>
 
-        <div class="stats-summary">
-            <div class="stat-card">
-                <h3>Moyenne "J'ai aimé"</h3>
-                <div class="value" id="avgLiked">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Moyenne "J'ai appris"</h3>
-                <div class="value" id="avgLearned">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Taux de satisfaction</h3>
-                <div class="value" id="satisfaction">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total réponses</h3>
-                <div class="value" id="totalCount">0</div>
-            </div>
-        </div>
+        <section class="stats-summary" aria-label="Résumé statistique">
+            <article class="stat-card"><h2>Moyenne « J’ai aimé »</h2><div class="value" id="avgLiked">–</div></article>
+            <article class="stat-card"><h2>Moyenne « J’ai appris »</h2><div class="value" id="avgLearned">–</div></article>
+            <article class="stat-card"><h2>Taux de satisfaction</h2><div class="value" id="satisfaction">–</div></article>
+            <article class="stat-card"><h2>Total des réponses</h2><div class="value" id="totalCount">0</div></article>
+        </section>
 
-        <div class="controls" id="controlButtons">
-            <!-- Les boutons seront ajoutés dynamiquement selon la session sélectionnée -->
-        </div>
+        <div class="controls" id="controlButtons"></div>
 
-        <div class="chart-container">
-            <div class="chart-title">Distribution des réponses</div>
-            <canvas id="statsChart"></canvas>
-        </div>
+        <section class="chart-container" aria-labelledby="distributionTitle">
+            <h2 class="chart-title" id="distributionTitle">Distribution des réponses</h2>
+            <canvas id="statsChart" role="img" aria-label="Graphique de distribution des réponses"></canvas>
+        </section>
 
-        <div class="chart-container">
-            <div class="chart-title">Évolution dans le temps</div>
-            <canvas id="timeChart"></canvas>
-        </div>
+        <section class="chart-container" aria-labelledby="timelineTitle">
+            <h2 class="chart-title" id="timelineTitle">Évolution dans le temps</h2>
+            <canvas id="timeChart" role="img" aria-label="Graphique d’évolution des moyennes"></canvas>
+        </section>
+        <p class="sr-only" id="accessibleStatsSummary" aria-live="polite"></p>
 
-        <div class="session-management">
-            <h3>🗂️ Gestion des sessions</h3>
+        <section class="session-management" aria-labelledby="sessionManagementTitle">
+            <h2 id="sessionManagementTitle">🗂️ Gestion des sessions</h2>
             <div id="sessionList" class="session-list"></div>
-        </div>
+        </section>
+    </main>
+
+    <footer class="app-footer" aria-label="Informations sur l’application">
+        <img class="app-footer__avatar" src="IMG/logo_dev.png" alt="" width="65" height="65">
+        <p>
+            Développé par <strong>Jérémy VIOLETTE</strong>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licence MIT</a>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours" target="_blank" rel="noopener noreferrer">Code source</a>
+        </p>
+    </footer>
+
+    <div class="modal-overlay" id="settingsModal" aria-hidden="true">
+        <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+            <h2 id="settingsModalTitle">🔐 Changer le code administrateur</h2>
+            <form id="settingsForm">
+                <label for="newAdminCode">Nouveau code (6 à 12 chiffres)</label>
+                <input type="password" id="newAdminCode" inputmode="numeric" pattern="[0-9]{6,12}" maxlength="12" autocomplete="new-password" required>
+                <label for="confirmAdminCode">Confirmer le nouveau code</label>
+                <input type="password" id="confirmAdminCode" inputmode="numeric" pattern="[0-9]{6,12}" maxlength="12" autocomplete="new-password" required>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" type="submit">Modifier</button>
+                    <button class="btn btn-secondary modal-cancel" type="button">Annuler</button>
+                </div>
+            </form>
+        </section>
     </div>
 
-    <!-- Modal Paramètres -->
-    <div class="modal-overlay" id="settingsModal" onclick="closeModalById('settingsModal', event)">
-        <div class="admin-modal" onclick="event.stopPropagation()">
-            <h2>🔐 Changer le code admin</h2>
-            <input type="password" id="newAdminCode" maxlength="4" placeholder="Nouveau code (4 chiffres)">
-            <input type="password" id="confirmAdminCode" maxlength="4" placeholder="Confirmer le code">
-            <div>
-                <button class="btn btn-primary" onclick="changeAdminCode()">Modifier</button>
-                <button class="btn btn-secondary" onclick="closeModalById('settingsModal')">Annuler</button>
+    <div class="modal-overlay" id="sessionModal" aria-hidden="true">
+        <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="sessionModalTitle">
+            <h2 id="sessionModalTitle">➕ Nouvelle session</h2>
+            <form id="sessionForm">
+                <label for="newSessionName">Nom de la session</label>
+                <input type="text" id="newSessionName" maxlength="100" autocomplete="off" placeholder="Ex. Cours 2026/2027" required>
+                <div class="modal-actions">
+                    <button class="btn btn-success" type="submit">Créer</button>
+                    <button class="btn btn-secondary modal-cancel" type="button">Annuler</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="resetModal" aria-hidden="true">
+        <section class="admin-modal" role="alertdialog" aria-modal="true" aria-labelledby="resetModalTitle" aria-describedby="resetConfirmText">
+            <h2 id="resetModalTitle">⚠️ Confirmation</h2>
+            <p id="resetConfirmText"></p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="confirmResetButton" type="button">Confirmer</button>
+                <button class="btn btn-secondary modal-cancel" type="button">Annuler</button>
             </div>
-        </div>
+        </section>
     </div>
-
-    <!-- Modal Nouvelle Session -->
-    <div class="modal-overlay" id="sessionModal" onclick="closeModalById('sessionModal', event)">
-        <div class="admin-modal" onclick="event.stopPropagation()">
-            <h2>➕ Nouvelle Session</h2>
-            <input type="text" id="newSessionName" placeholder="Nom de la session (ex: Cours 2025/2026)">
-            <div>
-                <button class="btn btn-success" onclick="createSession()">Créer</button>
-                <button class="btn btn-secondary" onclick="closeModalById('sessionModal')">Annuler</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Confirmation Reset -->
-    <div class="modal-overlay" id="resetModal" onclick="closeModalById('resetModal', event)">
-        <div class="admin-modal" onclick="event.stopPropagation()">
-            <h2>⚠️ Confirmation</h2>
-            <p id="resetConfirmText" style="margin-bottom: 20px;"></p>
-            <div>
-                <button class="btn btn-danger" onclick="confirmResetStats()">Confirmer</button>
-                <button class="btn btn-secondary" onclick="closeModalById('resetModal')">Annuler</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="scripts.js"></script>
 </body>
 </html>

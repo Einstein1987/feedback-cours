@@ -3,64 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Meta tags pour le mode plein écran iOS (webapp) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Eval Cours">
-    <meta name="description" content="Évaluation anonyme du cours">
-    <title>Évaluation du Cours</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="apple-mobile-web-app-title" content="Feedback cours">
+    <meta name="description" content="Feedback anonyme sur le cours">
+    <title>Feedback du cours</title>
+    <link rel="stylesheet" href="styles.css?v=20260818-audit">
+    <script src="scripts.js?v=20260818-audit" defer></script>
 </head>
-<body>
-    <div class="container">
-        <span class="settings-icon" onclick="openAdminModal()" title="Administration">⚙️</span>
-        
-        <h1>📚 Évaluation du Cours</h1>
+<body class="home-page">
+    <main class="container">
+        <button class="settings-icon icon-button" id="openAdminButton" type="button" aria-label="Ouvrir l’administration" title="Administration">⚙️</button>
 
-        <!-- Affichage simple de la session active -->
+        <h1>📚 Feedback du cours</h1>
+
         <div class="session-display" id="sessionDisplay">
             <span class="session-label">Session :</span>
-            <span class="session-name" id="sessionName">Chargement...</span>
+            <span class="session-name" id="sessionName" aria-live="polite">Chargement…</span>
         </div>
 
-        <div class="question-block">
-            <div class="question">J'ai aimé le cours aujourd'hui</div>
+        <section class="question-block" aria-labelledby="likedQuestion">
+            <h2 class="question" id="likedQuestion">J’ai aimé le cours aujourd’hui</h2>
             <div class="smiley-container">
-                <span class="smiley" onclick="sendFeedback('liked', 0)" title="J'ai détesté" data-value="0">😟</span>
-                <span class="smiley" onclick="sendFeedback('liked', 1)" title="Mouais bof" data-value="1">😐</span>
-                <span class="smiley" onclick="sendFeedback('liked', 2)" title="J'ai aimé" data-value="2">🙂</span>
-                <span class="smiley" onclick="sendFeedback('liked', 3)" title="J'ai adoré" data-value="3">😃</span>
+                <button class="smiley" type="button" data-feedback-type="liked" data-value="0" aria-label="Je n’ai pas aimé">😟</button>
+                <button class="smiley" type="button" data-feedback-type="liked" data-value="1" aria-label="J’ai moyennement aimé">😐</button>
+                <button class="smiley" type="button" data-feedback-type="liked" data-value="2" aria-label="J’ai aimé">🙂</button>
+                <button class="smiley" type="button" data-feedback-type="liked" data-value="3" aria-label="J’ai beaucoup aimé">😃</button>
             </div>
-        </div>
+        </section>
 
-        <div class="question-block">
-            <div class="question">J'ai appris quelque chose aujourd'hui</div>
+        <section class="question-block" aria-labelledby="learnedQuestion">
+            <h2 class="question" id="learnedQuestion">J’ai appris quelque chose aujourd’hui</h2>
             <div class="smiley-container">
-                <span class="smiley" onclick="sendFeedback('learned', 0)" title="Je n'ai rien appris" data-value="0">😟</span>
-                <span class="smiley" onclick="sendFeedback('learned', 1)" title="Mouais un peu" data-value="1">😐</span>
-                <span class="smiley" onclick="sendFeedback('learned', 2)" title="J'ai appris et compris quelque chose" data-value="2">🙂</span>
-                <span class="smiley" onclick="sendFeedback('learned', 3)" title="J'ai tout compris" data-value="3">😃</span>
+                <button class="smiley" type="button" data-feedback-type="learned" data-value="0" aria-label="Je n’ai rien appris">😟</button>
+                <button class="smiley" type="button" data-feedback-type="learned" data-value="1" aria-label="J’ai appris un peu">😐</button>
+                <button class="smiley" type="button" data-feedback-type="learned" data-value="2" aria-label="J’ai appris et compris">🙂</button>
+                <button class="smiley" type="button" data-feedback-type="learned" data-value="3" aria-label="J’ai tout compris">😃</button>
             </div>
-        </div>
+        </section>
 
-        <div class="footer">
-            Vos réponses sont totalement anonymes 🔒
-        </div>
+        <p class="privacy-note">Tes réponses sont totalement anonymes 🔒</p>
+    </main>
+
+    <div class="popup" id="popup" role="status" aria-live="polite">✓ Réponse enregistrée !</div>
+
+    <div class="modal-overlay" id="adminModal" aria-hidden="true">
+        <section class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+            <h2 id="adminModalTitle">🔐 Administration</h2>
+            <form id="adminForm">
+                <label class="sr-only" for="adminCode">Code administrateur</label>
+                <input type="password" id="adminCode" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="current-password" placeholder="Code administrateur" required>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" type="submit">Valider</button>
+                    <button class="btn btn-secondary" id="cancelAdminButton" type="button">Annuler</button>
+                </div>
+            </form>
+        </section>
     </div>
 
-    <div class="popup" id="popup">✓ Réponse enregistrée !</div>
-
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-        <div class="admin-modal" onclick="event.stopPropagation()">
-            <h2>🔐 Administration</h2>
-            <input type="password" id="adminCode" maxlength="4" placeholder="Code à 4 chiffres">
-            <div>
-                <button class="btn btn-primary" onclick="checkAdminCode()">Valider</button>
-                <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="scripts.js"></script>
+    <footer class="app-footer" aria-label="Informations sur l’application">
+        <img class="app-footer__avatar" src="IMG/logo_dev.png" alt="" width="65" height="65">
+        <p>
+            Développé par <strong>Jérémy VIOLETTE</strong>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licence MIT</a>
+            <span aria-hidden="true">•</span>
+            <a href="https://github.com/Einstein1987/feedback-cours" target="_blank" rel="noopener noreferrer">Code source</a>
+        </p>
+    </footer>
 </body>
 </html>
