@@ -13,7 +13,7 @@ $totalResponses = 0;
 $dailyData = [];
 
 foreach (readFeedbackLines() as $line) {
-    $parts = str_getcsv($line);
+    $parts = str_getcsv($line, ',', '"', '\\');
     if (count($parts) < 4) {
         continue;
     }
