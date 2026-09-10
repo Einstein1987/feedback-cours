@@ -15,8 +15,8 @@ withDataLock(ADMIN_HASH_FILE, true, function () use ($hashedCode) {
     atomicWriteFile(ADMIN_HASH_FILE, $hashedCode . PHP_EOL);
 });
 
-session_regenerate_id(true);
 session_start();
+session_regenerate_id(true);
 $_SESSION['is_admin'] = true;
 $_SESSION['admin_time'] = time();
 unset($_SESSION['csrf_token']);
