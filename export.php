@@ -25,7 +25,7 @@ header('X-Content-Type-Options: nosniff');
 
 $output = fopen('php://output', 'wb');
 fwrite($output, "\xEF\xBB\xBF");
-fputcsv($output, ['Date et Heure', 'Type', 'Valeur', 'Émotion', 'Session'], ';');
+fputcsv($output, ['Date et Heure', 'Type', 'Valeur', 'Émotion', 'Session'], ';', '"', '\\');
 
 $emotions = [
     0 => 'Pas satisfait 😟',
@@ -39,7 +39,7 @@ $typeLabels = [
 ];
 
 foreach (readFeedbackLines() as $line) {
-    $parts = str_getcsv($line);
+    $parts = str_getcsv($line, ',', '"', '\\');
     if (count($parts) < 4) {
         continue;
     }
@@ -51,12 +51,12 @@ foreach (readFeedbackLines() as $line) {
 
     $value = (int) $value;
     fputcsv($output, [
-        $timestamp,
-        $typeLabels[$type] ?? $type,
-        $value,
-        $emotions[$value] ?? (string) $value,
-        $sessionId,
-    ], ';');
+    $timestamp,
+    $typeLabels[$type] ?? $type,
+    $value,
+    $emotions[$value] ?? (string) $value,
+    $sessionId,
+], ';', '"', '\\');
 }
 
 fclose($output);
