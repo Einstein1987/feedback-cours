@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/config.php';
 
-$sessions = readJsonData(SESSIONS_FILE, []);
+try {
+    $sessions = readJsonData(SESSIONS_FILE, []);
+} catch (RuntimeException $exception) {
+    error_log($exception->getMessage());
+    jsonResponse(['success' => false, 'message' => 'Erreur de lecture des sessions'], 500);
+}
 
 if (!$sessions) {
     mutateJsonData(SESSIONS_FILE, function (&$storedSessions) {
