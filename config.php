@@ -144,12 +144,6 @@ function isAdminSession($touch = false)
     return true;
 }
 
-    if ($touch) {
-        $_SESSION['admin_time'] = time();
-    }
-    return true;
-}
-
 function requireAdmin()
 {
     if (!isAdminSession(true)) {
