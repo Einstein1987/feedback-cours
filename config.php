@@ -290,7 +290,7 @@ function appendFeedbackRow(array $row)
         }
 
         try {
-            if (fputcsv($stream, $row) === false) {
+            if (fputcsv($stream, $row, ',', '"', '\\') === false) {
                 throw new RuntimeException('Impossible d’écrire le feedback.');
             }
             fflush($stream);
@@ -311,7 +311,7 @@ function filterFeedbackRows(callable $keepRow)
         $kept = [];
 
         foreach ($lines as $line) {
-            $row = str_getcsv($line);
+            $row = str_getcsv($line, ',', '"', '\\');
             if ($keepRow($row)) {
                 $kept[] = $line;
             }
