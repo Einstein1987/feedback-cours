@@ -20,6 +20,7 @@ session_set_cookie_params([
     'samesite' => 'Strict',
 ]);
 session_start();
+session_write_close();
 
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
@@ -98,7 +99,11 @@ function requirePostRequest()
 function generateCSRFToken()
 {
     if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        session_start();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        session_write_close();
     }
     return $_SESSION['csrf_token'];
 }
@@ -124,10 +129,20 @@ function isAdminSession($touch = false)
     }
 
     if ((time() - (int) $_SESSION['admin_time']) > ADMIN_SESSION_TIMEOUT) {
+        session_start();
         unset($_SESSION['is_admin'], $_SESSION['admin_time'], $_SESSION['csrf_token']);
         session_regenerate_id(true);
+        session_write_close();
         return false;
     }
+
+    if ($touch) {
+        session_start();
+        $_SESSION['admin_time'] = time();
+        session_write_close();
+    }
+    return true;
+}
 
     if ($touch) {
         $_SESSION['admin_time'] = time();
