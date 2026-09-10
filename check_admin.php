@@ -23,8 +23,8 @@ if (!verifyAdminCode($code)) {
 }
 
 clearRateLimit($identifier);
-session_regenerate_id(true);
 session_start();
+session_regenerate_id(true);
 $_SESSION['is_admin'] = true;
 $_SESSION['admin_time'] = time();
 unset($_SESSION['csrf_token']);
