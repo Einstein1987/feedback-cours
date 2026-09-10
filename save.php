@@ -21,7 +21,12 @@ if (!validateSessionId($sessionId)) {
     jsonResponse(['success' => false, 'message' => 'Format de session invalide'], 400);
 }
 
-$sessions = readJsonData(SESSIONS_FILE, []);
+try {
+    $sessions = readJsonData(SESSIONS_FILE, []);
+} catch (RuntimeException $exception) {
+    error_log($exception->getMessage());
+    jsonResponse(['success' => false, 'message' => 'Erreur de lecture des sessions'], 500);
+}
 $sessionExists = false;
 foreach ($sessions as $session) {
     if (($session['id'] ?? '') === $sessionId) {
