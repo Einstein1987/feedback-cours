@@ -293,6 +293,14 @@ function calculateSatisfaction(liked, learned) {
         : null;
 }
 
+function satisfactionLabel(percentage) {
+    if (percentage === null) return '';
+    if (percentage >= 75) return 'Très satisfaisant';
+    if (percentage >= 50) return 'Satisfaisant';
+    if (percentage >= 25) return 'Fragile';
+    return 'Insuffisant';
+}
+
 function updateStatsUI(data) {
     const liked = calculateAverage(data.counts.liked);
     const learned = calculateAverage(data.counts.learned);
