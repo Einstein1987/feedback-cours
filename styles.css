@@ -635,6 +635,13 @@ body.stats-page h1 {
     color: var(--primary-color);
 }
 
+.stat-card .label {
+    margin-top: 5px;
+    font-size: 0.95rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
 .chart-container {
     position: relative;
     margin-bottom: 40px;
