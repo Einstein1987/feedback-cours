@@ -269,27 +269,47 @@ function updateControlButtons(session) {
     }
 }
 
+const SATISFACTION_LABELS = ['Insuffisant', 'Fragile', 'Satisfaisant', 'Très satisfaisant'];
+
 function calculateAverage(counts) {
     const total = counts.reduce((sum, count, index) => sum + count * index, 0);
     const responses = counts.reduce((sum, count) => sum + count, 0);
-    return responses ? total / responses : 0;
+    return {
+        average: responses ? total / responses : 0,
+        count: responses,
+    };
+}
+
+function averageLabel(average, count) {
+    return count ? SATISFACTION_LABELS[Math.round(average)] ?? '' : '';
+}
+
+function calculateSatisfaction(liked, learned) {
+    const items = [];
+    if (liked.count) items.push(liked.average);
+    if (learned.count) items.push(learned.average);
+    return items.length
+        ? Math.round((items.reduce((sum, value) => sum + value, 0) / (items.length * 3)) * 100)
+        : null;
 }
 
 function updateStatsUI(data) {
-    const avgLiked = calculateAverage(data.counts.liked);
-    const avgLearned = calculateAverage(data.counts.learned);
-    const satisfaction = Math.round(((avgLiked + avgLearned) / 6) * 100);
+    const liked = calculateAverage(data.counts.liked);
+    const learned = calculateAverage(data.counts.learned);
+    const satisfaction = calculateSatisfaction(liked, learned);
 
     document.getElementById('resetDate').textContent = 'Dernière remise à zéro : ' + data.lastResetDate;
     document.getElementById('totalResponses').textContent = 'Total : ' + data.totalResponses + ' réponses enregistrées';
     document.getElementById('totalCount').textContent = data.totalResponses;
-    document.getElementById('avgLiked').textContent = avgLiked.toFixed(1);
-    document.getElementById('avgLearned').textContent = avgLearned.toFixed(1);
-    document.getElementById('satisfaction').textContent = satisfaction + ' %';
+    document.getElementById('avgLiked').textContent = liked.average.toFixed(1);
+    document.getElementById('avgLikedLabel').textContent = averageLabel(liked.average, liked.count);
+    document.getElementById('avgLearned').textContent = learned.average.toFixed(1);
+    document.getElementById('avgLearnedLabel').textContent = averageLabel(learned.average, learned.count);
+    document.getElementById('satisfaction').textContent = satisfaction === null ? '–' : satisfaction + ' %';
     document.getElementById('accessibleStatsSummary').textContent =
-        'Moyenne appréciation : ' + avgLiked.toFixed(1) + ' sur 3. ' +
-        'Moyenne apprentissage : ' + avgLearned.toFixed(1) + ' sur 3. ' +
-        'Satisfaction : ' + satisfaction + ' %. ' +
+        'Moyenne appréciation : ' + liked.average.toFixed(1) + ' sur 3. ' +
+        'Moyenne apprentissage : ' + learned.average.toFixed(1) + ' sur 3. ' +
+        'Satisfaction : ' + (satisfaction === null ? 'non disponible' : satisfaction + ' %') + '. ' +
         data.totalResponses + ' réponses au total.';
 }
 
