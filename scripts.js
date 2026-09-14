@@ -314,6 +314,7 @@ function updateStatsUI(data) {
     document.getElementById('avgLearned').textContent = learned.average.toFixed(1);
     document.getElementById('avgLearnedLabel').textContent = averageLabel(learned.average, learned.count);
     document.getElementById('satisfaction').textContent = satisfaction === null ? '–' : satisfaction + ' %';
+document.getElementById('satisfactionLabel').textContent = satisfactionLabel(satisfaction);
     document.getElementById('accessibleStatsSummary').textContent =
         'Moyenne appréciation : ' + liked.average.toFixed(1) + ' sur 3. ' +
         'Moyenne apprentissage : ' + learned.average.toFixed(1) + ' sur 3. ' +
